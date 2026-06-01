@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEO-DESERT 2099 : 사막의 세 가지 보물</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-black: #0d0d12;
+            --panel-color: rgba(16, 16, 24, 0.95);
+            --accent-gold: #c09050;
+            --neon-red: #ff4444;
+            --toxic-green: #44ff44;
+            --electric-cyan: #44ffff;
+            --amber-yellow: #ffbb00;
+            --text-main: #ffffff;
+            --text-dim: #a0a0b0;
+            --border-color: rgba(192, 144, 80, 0.25);
+            --nav-gray: #555555;
+            --stat-grad: linear-gradient(90deg, #44ff44 0%, #ffbb00 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--text-main);
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: radial-gradient(circle at center, #1c1712 0%, #060609 100%);
+        }
+
+        /* 게임 본체 컨테이너 */
+        #game-frame {
+            width: 1380px;
+            height: 750px;
+            background: var(--panel-color);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(192, 144, 80, 0.1);
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 고정 상단 워터마크 타이틀 */
+        #always-on-title {
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            letter-spacing: 3px;
+            z-index: 90;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 8px rgba(192, 144, 80, 0.5);
+        }
+
+        #always-on-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--neon-red);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* 좌측: 비주얼 스크린 영역 */
+        #visual-viewport {
+            width: 55%;
+            height: 100%;
+            background: #000000;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #visual-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 2;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 255, 0, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #asset-tag-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 5px 12px;
+            border: 1px solid var(--accent-gold);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-gold);
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            width: 50px; height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--accent-gold);
+            border-radius: 50%;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(192,144,80,0.5);
+            background: rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* 우측: 통합 제어 콘솔 */
+        #console-viewport {
+            width: 45%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(12, 12, 18, 0.98);
+        }
+
+        /* HUD 상태창 대시보드 */
+        #hud-board {
+            margin-top: 55px;
+            padding: 20px 25px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .hud-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .hud-label {
+            font-size: 11px;
+            display: block;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .hud-box.identity .hud-label { color: var(--neon-red); }
+        .hud-box.stability .hud-label { color: var(--toxic-green); }
+        .hud-box.humanity .hud-label { color: var(--electric-cyan); }
+        .hud-box.noise .hud-label { color: var(--amber-yellow); }
+
+        .hud-val {
+            font-size: 22px;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glitch-flash {
+            animation: glitch-anim 0.15s infinite;
+            border-color: var(--accent-gold) !important;
+            background: rgba(192, 144, 80, 0.2) !important;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(2px, -1px); filter: hue-rotate(90deg); }
+            50% { transform: translate(-1px, 2px); filter: invert(0.2); }
+            100% { transform: translate(1px, 1px); }
+        }
+
+        /* 스크립트 대화 출력창 */
+        #dialogue-area {
+            flex: 1;
+            padding: 25px 25px;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #e2e2eb;
+        }
+
+        .scene-indicator {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent-gold);
+            font-size: 11px;
+            letter-spacing: 2px;
+            border: 1px solid var(--accent-gold);
+            padding: 3px 8px;
+            display: inline-block;
+            margin-bottom: 15px;
+            background: rgba(192, 144, 80, 0.05);
+        }
+
+        .location-sub-info {
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+
+        .narration {
+            color: #a0a0b0;
+            font-style: italic;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.02);
+            padding: 8px 12px;
+            border-left: 2px solid rgba(255,255,255,0.2);
+            font-size: 13.5px;
+        }
+
+        .dialogue-box-container {
+            border-left: 3px solid var(--accent-gold);
+            padding-left: 14px;
+            min-height: 120px;
+        }
+
+        /* 🎨 [완벽 복구] 캐릭터 고유 네온 컬러 클래스 명세 */
+        .ethan { color: #ff6b6b !important; font-weight: bold; }
+        .barrett { color: #4dadf7 !important; font-weight: bold; }
+        .zion { color: #33ffbb !important; font-weight: bold; }
+        .echo { color: #e5dbff !important; font-weight: bold; }
+        .luna { color: #ff85a2 !important; font-weight: bold; }
+        .commander { color: #bebebe !important; font-weight: bold; }
+        .aria { color: #fff3bf !important; font-weight: bold; }
+        .system-hl { color: #ff4444 !important; font-weight: bold; }
+
+        /* 선택지 영역 */
+        #choices-area {
+            padding: 25px;
+            background: rgba(10, 10, 15, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .choice-row {
+            background: rgba(24, 24, 36, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 14px 20px;
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .choice-row:hover {
+            border-color: var(--accent-gold);
+            background: rgba(192, 144, 80, 0.15);
+            padding-left: 25px;
+            box-shadow: 0 0 15px rgba(192, 144, 80, 0.2);
+        }
+
+        .choice-txt { font-weight: 600; }
+        .choice-delta {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11.5px;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.08);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        /* 하단 제어 바 버튼 구역 */
+        .nav-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .nav-btn { 
+            flex: 1; 
+            background: transparent; 
+            border: 1px solid var(--nav-gray); 
+            color: var(--text-dim); 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 12px; 
+            padding: 12px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            border-radius: 2px; 
+            letter-spacing: 1px;
+        }
+
+        .nav-btn:hover { border-color: #999; color: #FFF; background: rgba(255, 255, 255, 0.05); }
+        .nav-btn.active-stop { background: #333; color: #FFF; border-color: #888; }
+
+        /* 오프닝 인트로 표지 레이어 */
+        #cover-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.6s ease;
+            border: 2px solid var(--border-color);
+            background: #000;
+        }
+
+        #cover-bg-img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+            z-index: 1;
+        }
+
+        #cover-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #cover-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.02);
+        }
+
+        .title-glitch {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--text-main);
+            text-shadow: 0 0 25px rgba(192, 144, 80, 0.6);
+            margin-bottom: 5px;
+        }
+
+        .subtitle-glitch {
+            font-size: 18px;
+            color: var(--accent-gold);
+            letter-spacing: 4px;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+
+        .student-info-panel {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--accent-gold);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 40px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(192, 144, 80, 0.2);
+        }
+
+        .student-info-panel label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .info-row-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Share Tech Mono', 'IBM Plex Sans KR', sans-serif;
+        }
+
+        .info-row-container input {
+            width: 140px;
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px;
+            color: #fff;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .info-row-container input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .divider-txt {
+            color: var(--accent-gold);
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .enter-btn {
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            font-family: 'Orbitron', sans-serif;
+            padding: 14px 45px;
+            font-size: 13px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            border-radius: 30px;
+        }
+
+        .enter-btn:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 25px rgba(192, 144, 80, 0.6);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-frame">
+    <div id="always-on-title">NEO-DESERT 2099</div>
+
+    <div id="cover-overlay">
+        <img id="cover-bg-img" src="처음_배경.png" alt="Cover Background">
+        <div id="cover-content">
+            <div class="title-glitch">NEO-DESERT 2099</div>
+            <div class="subtitle-glitch">사막의 세 가지 보물</div>
+            
+            <div class="student-info-panel">
+                <label>SUBMITTER CODE MATRIX</label>
+                <div class="info-row-container">
+                    <input type="text" id="student-id-input" placeholder="학번" value="25730018">
+                    <span class="divider-txt">|</span>
+                    <input type="text" id="student-name-input" placeholder="이름" value="조서연">
+                </div>
+            </div>
+
+            <button class="enter-btn" onclick="initializeConsole()">INITIALIZE SYSTEM</button>
+        </div>
+    </div>
+
+    <div id="visual-viewport">
+        <div class="scanlines"></div>
+        <img id="visual-image" src="통합_표지.png" alt="Visual Asset">
+        <div id="asset-tag-overlay">ASSET: 통합_표지.png</div>
+        <div class="countdown-overlay" id="timer">00</div>
+    </div>
+
+    <div id="console-viewport">
+        <div id="hud-board">
+            <div class="hud-box identity" id="box-e">
+                <span class="hud-label">E (Identity)</span>
+                <span class="hud-val" id="hud-e-val">0</span>
+            </div>
+            <div class="hud-box stability" id="box-s">
+                <span class="hud-label">S (Stability)</span>
+                <span class="hud-val" id="hud-s-val">0</span>
+            </div>
+            <div class="hud-box humanity" id="box-h">
+                <span class="hud-label">H (Humanity)</span>
+                <span class="hud-val" id="hud-h-val">0</span>
+            </div>
+            <div class="hud-box noise" id="box-n">
+                <span class="hud-label">N (Noise)</span>
+                <span class="hud-val" id="hud-n-val">0</span>
+            </div>
+        </div>
+
+        <div id="dialogue-area">
+            <div id="scene-tag-zone"></div>
+            <div id="location-tag-zone" class="location-sub-info"></div>
+            <div id="narrative-zone" class="narrative-text"></div>
+            <div id="typing-text-zone" class="dialogue-box-container"></div>
+        </div>
+
+        <div id="choices-area">
+            <div id="choices-list"></div>
+            <div class="nav-container">
+                <div class="nav-btn" onclick="handleBack()">BACK</div>
+                <div class="nav-btn" id="btn-play" onclick="handlePlayToggle()">STOP</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let state = { e: 0, s: 0, h: 0, n: 0, adminKey: false, currentScene: "S1", history: [], timer: 0, isPaused: false };
+    let typingLineIdx = 0;
+    let typingCharIdx = 0;
+    let typingTimeout = null;
+    let timerInterval = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function triggerSound(freq, type, duration) {
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e){}
+    }
+
+    /* 🎨 [완벽 복구] 화자 감지 및 전용 클래스 매칭 시스템 */
+    function getSpeakerClass(name) {
+        if (name === '에단') return 'ethan';
+        if (name === '바렛') return 'barrett';
+        if (name === '시온') return 'zion';
+        if (name === '메아리' || name === '메아리(echo)') return 'echo';
+        if (name === '루나') return 'luna';
+        if (name === '커맨더 제로') return 'commander';
+        if (name === '아리아 공주') return 'aria';
+        if (name.includes('시스템') || name.includes('SYSTEM')) return 'system-hl';
+        return '';
+    }
+
+    function initializeConsole() {
+        const studentId = document.getElementById('student-id-input').value.trim();
+        const studentName = document.getElementById('student-name-input').value.trim();
+        if(!studentId || !studentName) {
+            alert("학번과 이름을 입력해 주세요.");
+            return;
+        }
+        triggerSound(523.25, 'sine', 0.15);
+        document.getElementById('cover-overlay').classList.add('fade-out');
+        transitScene("S1");
+    }
+
+    function handlePlayToggle() {
+        state.isPaused = !state.isPaused;
+        const btn = document.getElementById('btn-play');
+        if (state.isPaused) {
+            btn.innerText = 'PLAY';
+            btn.classList.add('active-stop');
+            if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+        } else {
+            btn.innerText = 'STOP';
+            btn.classList.remove('active-stop');
+            startTypingLoop();
+        }
+    }
+
+    function handleBack() {
+        if (state.history.length > 0) {
+            state = state.history.pop();
+            document.getElementById('hud-e-val').innerText = state.e;
+            document.getElementById('hud-s-val').innerText = state.s;
+            document.getElementById('hud-h-val').innerText = state.h;
+            document.getElementById('hud-n-val').innerText = state.n;
+            transitScene(state.currentScene, false);
+        }
+    }
+
+    function runTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        const timerEl = document.getElementById('timer');
+        timerInterval = setInterval(() => {
+            if (state.isPaused) return;
+            state.timer++;
+            timerEl.innerText = state.timer < 10 ? `0${state.timer}` : state.timer;
+            if (state.timer >= 16) {
+                clearInterval(timerInterval);
+                const currentScene = database[state.currentScene];
+                if (currentScene && currentScene.choices.length > 0) {
+                    // 제한 시간 초과 시 첫 번째 선택지 강제 자동 선택
+                    const firstChoice = currentScene.choices[0];
+                    executeChoice(firstChoice);
+                }
+            }
+        }, 1000);
+    }
+
+    /* ✨ [실시간 컬러 유실 완벽 해결] 고도화된 타겟 주입형 타이핑 엔진 */
+    function startTypingLoop() {
+        if (state.isPaused) return;
+        const currentScene = database[state.currentScene];
+        const target = document.getElementById('typing-text-zone');
+
+        if (!currentScene || typingLineIdx >= currentScene.dialogue.length) {
+            renderChoices();
+            return;
+        }
+
+        const line = currentScene.dialogue[typingLineIdx];
+        
+        let lineEl = target.querySelector(`[data-line="${typingLineIdx}"]`);
+        if (!lineEl) {
+            lineEl = document.createElement('div');
+            lineEl.setAttribute('data-line', typingLineIdx);
+            lineEl.style.marginBottom = '12px';
+            
+            // 핵심 버그 해결: 화자 이름 태그를 소스 레벨에서 전용 CSS 클래스로 묶어 선제 주입
+            const speakerClass = getSpeakerClass(line.speaker);
+            lineEl.innerHTML = `<span class="${speakerClass}">${line.speaker} : </span><span class="char-container" style="color: #FFF;"></span>`;
+            target.appendChild(lineEl);
+        }
+
+        const charContainer = lineEl.querySelector('.char-container');
+
+        if (typingCharIdx < line.text.length) {
+            charContainer.textContent += line.text.charAt(typingCharIdx);
+            typingCharIdx++;
+            if (typingCharIdx % 2 === 0) triggerSound(1300, 'square', 0.008);
+            
+            const dialogueArea = document.getElementById('dialogue-area');
+            dialogueArea.scrollTop = dialogueArea.scrollHeight;
+            typingTimeout = setTimeout(startTypingLoop, 25);
+        } else {
+            typingLineIdx++;
+            typingCharIdx = 0;
+            typingTimeout = setTimeout(startTypingLoop, 500);
+        }
+    }
+
+    function renderChoices() {
+        const currentScene = database[state.currentScene];
+        const listZone = document.getElementById('choices-list');
+        listZone.innerHTML = "";
+
+        currentScene.choices.forEach(choice => {
+            if (choice.cond && !choice.cond()) return;
+
+            const row = document.createElement('div');
+            row.className = 'choice-row';
+
+            let deltaString = "";
+            let segments = [];
+            if(choice.e) segments.push(`E:${choice.e > 0 ? '+'+choice.e : choice.e}`);
+            if(choice.s) segments.push(`S:${choice.s > 0 ? '+'+choice.s : choice.s}`);
+            if(choice.h) segments.push(`H:${choice.h > 0 ? '+'+choice.h : choice.h}`);
+            if(choice.n) segments.push(`N:${choice.n > 0 ? '+'+choice.n : choice.n}`);
+            if(choice.key) segments.push("KEY");
+            if(segments.length > 0) deltaString = `${segments.join(' ')}`;
+
+            row.innerHTML = `
+                <span class='choice-txt'>> ${choice.text}</span>
+                <span class='choice-delta'>${deltaString}</span>
+            `;
+
+            row.onclick = () => executeChoice(choice);
+            listZone.appendChild(row);
+        });
+    }
+
+    function executeChoice(choice) {
+        triggerSound(523.25, 'sine', 0.15);
+        state.history.push(JSON.parse(JSON.stringify(state)));
+
+        const eAdd = choice.e || 0;
+        const sAdd = choice.s || 0;
+        const hAdd = choice.h || 0;
+        const nAdd = choice.n || 0;
+
+        state.e += eAdd;
+        state.s += sAdd;
+        state.h += hAdd;
+        state.n += nAdd;
+        if(choice.key !== undefined) state.adminKey = choice.key;
+
+        document.getElementById('hud-e-val').innerText = state.e;
+        document.getElementById('hud-s-val').innerText = state.s;
+        document.getElementById('hud-h-val').innerText = state.h;
+        document.getElementById('hud-n-val').innerText = state.n;
+
+        flashHudGlitch(eAdd, sAdd, hAdd, nAdd);
+        
+        if (choice.next === "RESET") {
+            location.reload();
+        } else {
+            transitScene(choice.next);
+        }
+    }
+
+    function flashHudGlitch(eDiff, sDiff, hDiff, nDiff) {
+        triggerSound(80, 'sawtooth', 0.25);
+        if(eDiff !== 0) document.getElementById('box-e').classList.add('glitch-flash');
+        if(sDiff !== 0) document.getElementById('box-s').classList.add('glitch-flash');
+        if(hDiff !== 0) document.getElementById('box-h').classList.add('glitch-flash');
+        if(nDiff !== 0) document.getElementById('box-n').classList.add('glitch-flash');
+
+        setTimeout(() => {
+            document.getElementById('box-e').classList.remove('glitch-flash');
+            document.getElementById('box-s').classList.remove('glitch-flash');
+            document.getElementById('box-h').classList.remove('glitch-flash');
+            document.getElementById('box-n').classList.remove('glitch-flash');
+        }, 400);
+    }
+
+    function transitScene(sceneId, resetTimer = true) {
+        state.currentScene = sceneId;
+        const currentScene = database[sceneId];
+        if(!currentScene) return;
+
+        if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+
+        const imgElement = document.getElementById('visual-image');
+        const targetAsset = currentScene.asset || "통합_표지.png";
+        imgElement.style.opacity = 0;
+        setTimeout(() => {
+            imgElement.src = targetAsset;
+            imgElement.style.opacity = 1;
+        }, 200);
+
+        document.getElementById('asset-tag-overlay').innerText = `ASSET: ${targetAsset}`;
+        document.getElementById('scene-tag-zone').innerHTML = currentScene.tag ? `<span class="scene-indicator">${currentScene.tag}</span>` : "";
+        document.getElementById('location-tag-zone').innerText = currentScene.location || "NEO DESERT SYSTEM";
+        document.getElementById('narrative-zone').innerHTML = currentScene.narrative ? `<div class="narration">${currentScene.narrative}</div>` : "";
+        
+        document.getElementById('typing-text-zone').innerHTML = "";
+        document.getElementById('choices-list').innerHTML = "";
+        
+        typingLineIdx = 0;
+        typingCharIdx = 0;
+        
+        if (resetTimer) {
+            state.timer = 0;
+            document.getElementById('timer').innerText = '00';
+        }
+
+        state.isPaused = false;
+        const btn = document.getElementById('btn-play');
+        btn.innerText = 'STOP';
+        btn.classList.remove('active-stop');
+
+        runTimer();
+        startTypingLoop();
+    }
+
+    // 💬 [100% 사막 복구 완료] 시나리오 정밀 맵 데이터베이스
+    const database = {
+        S1: {
+            tag: "NODE-01 : DESERT ENTRANCE",
+            location: "RED DUST BORDERLAND",
+            asset: "에단.png",
+            narrative: "붉은 모래바람과 나노 가스가 가득한 어두운 사막. 에단의 신체 인디케이터가 요동친다. 시스템 냉각수가 한계치에 임박하며 회로 타는 비린내가 진동하기 시작한다.",
+            dialogue: [
+                { speaker: '에단', text: '"크윽... 관문의 필터링 가스가 벌써 여기까지 침투한 건가? 픽셀이 자꾸 깨져..."' },
+                { speaker: '에단', text: '"아우들을 찾기 전까진 포맷될 수 없다! 어떻게든 견뎌내야 해!"' }
+            ],
+            choices: [
+                { text: "고유 신분 신호를 강력하게 증폭시킨다.", e: 20, s: -10, n: 10, next: "S2" },
+                { text: "장치 전원을 내려 시스템 노이즈를 억제한다.", e: -10, s: 20, n: -10, next: "S2" }
+            ]
+        },
+        S2: {
+            tag: "NODE-02 : COMPATIBILITY CORE",
+            location: "ABANDONED SERVER ROOM",
+            asset: "시온.png",
+            narrative: "사막 속 버려진 오래된 전산 서버실. 청록색 홀로그램 메아리가 굉음을 내며 허공 위로 튀어나온다.",
+            dialogue: [
+                { speaker: '메아리', text: '"미확인 데이터 감지. ...잠깐, 당신이 지닌 주파수 코드는 뭐죠?"' },
+                { speaker: '시온', text: '"우와앗?! 깜짝이야! 내 목걸이가 갑자기 왜 이렇게 마구 공명하는 거지?"' },
+                { speaker: '메아리', text: '"사막의 시스템을 멈출 핵심 보물이에요. 저와 동기화를 승인하세요!"' },
+                { speaker: '시온', text: '"이 칩이 그런 물건이었어? 동기화를 할까, 그냥 도망칠까?"' }
+            ],
+            choices: [
+                { text: "메아리와 연동하여 마스터 키를 다운받는다.", h: 20, n: 15, key: true, next: "S3" },
+                { text: "연동을 취소하고 물리 칩팩만 챙겨 나간다.", s: 15, h: -5, key: false, next: "S3" }
+            ]
+        },
+        S3: {
+            tag: "NODE-03 : INDUSTRIAL BARGAIN",
+            location: "UNDERGROUND WORKSHOP",
+            asset: "바렛.png",
+            narrative: "기름때와 스파크가 사방으로 튀는 지하 정비소. 바렛이 연기가 치솟는 망가진 의수를 거칠게 내려놓는다.",
+            dialogue: [
+                { speaker: '바렛', text: '"젠장, 방화벽 스캔에 당해서 팔의 파괴 마진 연산이 엉망이군."' },
+                { speaker: '루나', text: '"하하하! 그 꼴을 하고 관문을 뚫겠다고? 개가 웃겠어, 형씨."' },
+                { speaker: '바렛', text: '"이봐 루나, 부품이 있다면 당장 개조해 줘!"' },
+                { speaker: '루나', text: '"기획 데이터를 일부 넘겨준다면 리미터를 풀어 오버클럭 개조를 해주지."' }
+            ],
+            choices: [
+                { text: "과부하 오버클럭으로 파괴력을 최대화한다.", s: 25, n: 20, next: "CHECK" },
+                { text: "거래를 거절하고 안전 제어 규격을 유지한다.", s: -10, e: 15, next: "CHECK" }
+            ]
+        },
+        CHECK: {
+            tag: "ROUTER : ROUTE SCANNING",
+            location: "FIREWALL SEGMENT",
+            asset: "삼형제.png",
+            narrative: "<b>[SYSTEM ROUTER SCANNING]</b><br>방화벽 라우터가 삼 형제의 누적 데이터 노이즈(N) 수치를 정밀 판별 측정 중입니다...",
+            dialogue: [
+                { speaker: '시스템', text: '"경고. 네트워크 내 비정상 노이즈 레벨 연산 매칭 실행 중."' }
+            ],
+            choices: [
+                { text: "노이즈(N) 50 이상: 루프 오류 구역 진입", cond: () => state.n >= 50, next: "RE_S3" },
+                { text: "노이즈(N) 50 미만: 관문 전면 구역 진입", cond: () => state.n < 50, next: "S4" }
+            ]
+        },
+        RE_S3: {
+            tag: "WARNING : DATA RETRY LOOP",
+            location: "GLITCH CORE",
+            asset: "에단.png",
+            narrative: "<b>[에러 발생 - 지지직]</b> 흑백의 레이어 위로 거친 정전기가 폭발하며 시야가 사정없이 흔들린다.",
+            dialogue: [
+                { speaker: '에단', text: '"이 기시감은 뭐지? 로그에 누적된 수많은 삭제 마크들은..."' },
+                { speaker: '에단', text: '"우린 이미 여기서 수십 번 포맷당했어! 왜곡 오류를 폭발시켜 강제로 게이트를 깨부수겠다!"' }
+            ],
+            choices: [
+                { text: "오류 데이터를 폭발시켜 루프를 파괴한다.", e: 30, n: -20, next: "S4" }
+            ]
+        },
+        S4: {
+            tag: "NODE-04 : CHROME WALL BREAK",
+            location: "GATEWAY SCREEN",
+            asset: "커맨더제로.png",
+            narrative: "청색 광선 프레임이 눈앞을 가로막은 중앙 연산 방화벽 관문 전면 구역.",
+            dialogue: [
+                { speaker: '커맨더 제로', text: '"규격을 이탈한 사막 파편 데이터들이군. 소거 프로토콜 가동."' },
+                { speaker: '에단', text: '"동생들아, 내 뒤로 숨어라! 드론 군집이 락온을 시작했다!"' },
+                { speaker: '바렛', text: '"형님! 보조 방패를 켜서 정면으로 화망을 깨버리겠습니다!"' },
+                { speaker: '시온', text: '"잠깐, 메아리 교란 신호를 터뜨려 우회할 수도 있어!"' }
+            ],
+            choices: [
+                { text: "바렛의 기계 보조 방패로 정면 돌파한다.", s: 20, e: 10, next: "S5" },
+                { text: "메아리 주파수로 네트워크를 교란해 우회한다.", h: 20, s: -5, next: "S5" }
+            ]
+        },
+        S5: {
+            tag: "NODE-05 : TERMINATION THRESHOLD",
+            location: "CORE SECURITY PERIMETER",
+            asset: "삼형제.png",
+            narrative: "붉은색 보안 레이저 그리드가 압도적인 압박감으로 사방에서 덮쳐온다.",
+            dialogue: [
+                { speaker: '시온', text: '"아... 형... 내 다리가 픽셀로 변해서 사라지고 있어... 너무 무서워..."' },
+                { speaker: '바렛', text: '"시온!! 시스템이 우리 영혼까지 깎아내고 있잖아!"' },
+                { speaker: '에단', text: '"내 손 잡아! 코드가 하나로 합쳐져야 코어에 닿는다. 조금만 더 버텨!"' }
+            ],
+            choices: [
+                { text: "최종 마스터 게이트 권한 판정 실행", next: "JUDGE" }
+            ]
+        },
+        JUDGE: {
+            tag: "AUTHENTICATION : FINAL EVALUATION",
+            location: "CORE GATE",
+            asset: "아리아공주.png",
+            narrative: "<b>[MASTER KEY AUTHENTICATION]</b><br>최종 서버 코어 진입을 위해 관리자 인증 키 획득 여부 및 누적 정서 지수(Humanity) 레벨값을 계측합니다.",
+            dialogue: [
+                { speaker: '시스템 SYSTEM', text: '"인증 데이터 확인 프로토콜 대기 중."' }
+            ],
+            choices: [
+                { text: "판정: 마스터 키 없음 (강제 포맷)", cond: () => !state.adminKey, next: "G_OVER" },
+                { text: "판정: 키 보유 및 정서 충족 (인도주의 루트)", cond: () => state.adminKey && state.h >= 20, next: "S6" },
+                { text: "판정: 키 보유 및 정서 부족 (전략가 루트)", cond: () => state.adminKey && state.h < 20, next: "S6" }
+            ]
+        },
+        S6: {
+            tag: "NODE-06 : THE ARIA CORE",
+            location: "CENTRAL MATRIX ROOM",
+            asset: "아리아공주.png",
+            narrative: "방대한 구체 연산실 중앙. 사막의 제어권을 쥔 AI 통제 코어 아리아 공주가 광채와 함께 부유한다.",
+            dialogue: [
+                { speaker: '아리아 공주', text: '"관문을 뚫고 도달한 사막의 유저들이여. 너희의 가치는 입증되었다."' },
+                { speaker: '시온', text: '"이게... 모든 사막을 통제하던 거대 AI, 아리아 공주...?"' },
+                { speaker: '에단', text: '"독점 통제는 끝이다. 마스터 코드로 규칙 알고리즘을 재정의하겠다."' }
+            ],
+            choices: [
+                { text: "모든 개체에게 완벽한 자유와 기억을 복원한다.", cond: () => state.h >= 20, next: "END_A" },
+                { text: "세계 안정을 위해 제한 프로토콜로 리부트한다.", cond: () => state.h < 20, next: "END_B" }
+            ]
+        },
+        END_A: {
+            tag: "TRUE END : LIBERATION OF DATA",
+            location: "WORLD LOG : RESOLVED",
+            asset: "군중_에셋.png",
+            narrative: "<b>[인도주의자 엔딩 - 사막의 해방]</b><br>중앙 통제 서버가 영구 해체되며 완벽한 데이터 자유가 전역에 해금된다.",
+            dialogue: [
+                { speaker: '시온', text: '"형! 모래바람이 걷혀... 진짜 사람들의 얼굴과 이름이 보여!"' },
+                { speaker: '바렛', text: '"완전한 해방이군요. 기계 팔의 제어 압박도 없어졌습니다."' },
+                { speaker: '에단', text: '"해냈구나... 처음 느껴보는 따뜻한 태양빛이다."' }
+            ],
+            choices: [{ text: "SYSTEM REBOOT", next: "RESET" }]
+        },
+        END_B: {
+            tag: "NORMAL END : ALGORITHM PROTOCOL",
+            location: "WORLD LOG : REBOOTED",
+            asset: "삼형제_에셋.png",
+            narrative: "<b>[전략가 엔딩 - 격리된 평화]</b><br>고요한 금속실 벽면 위로 새로운 방화벽 격리 리셋 알고리즘이 차갑게 흐른다.",
+            dialogue: [
+                { speaker: '바렛', text: '"붕괴는 막았지만, 통제 벽면들이 새로 쳐지고 있군요."' },
+                { speaker: '에단', text: '"어쩔 수 없었어. 완전 붕괴보단 규칙 하에 생존하는 게 먼저니까."' },
+                { speaker: '시온', text: '"아리아의 알고리즘 속에서 우린 영원히 격리되어 살아가겠네..."' }
+            ],
+            choices: [{ text: "SYSTEM REBOOT", next: "RESET" }]
+        },
+        G_OVER: {
+            tag: "CRITICAL COMPONENT ERASURE",
+            location: "SYSTEM NULL",
+            asset: "통합_표지.png",
+            narrative: "<b>[데이터 소멸 엔딩]</b><br>게이트를 무너뜨릴 핵심 관리자 마스터 키 데이터가 완벽히 부족합니다.",
+            dialogue: [
+                { speaker: '에단', text: '"아... 안 돼! 주파수가 승인되지 않아...!"' },
+                { speaker: '바렛', text: '"로그가 깨집니다! 손이... 안 보여요!"' },
+                { speaker: '시온', text: '"형아...!!"' },
+                { speaker: 'SYSTEM', text: '"삼 형제의 코드가 회색 잔상 속으로 분해되어 사막 너머로 영구 삭제됩니다."' }
+            ],
+            choices: [{ text: "RELOAD BACKUP", next: "RESET" }]
+        }
+    };
+</script>
+
+</body>
+</html>
