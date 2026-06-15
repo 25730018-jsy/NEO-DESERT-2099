@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEO-DESERT 2099 : 사막의 세 가지 보물</title>
     <style>
+#asset-tag-overlay {
+    display: none !important;
+}
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
         :root {
@@ -462,7 +465,7 @@
     <div id="always-on-title">NEO-DESERT 2099</div>
 
     <div id="cover-overlay">
-        <img id="cover-bg-img" src="처음_배경.png" alt="Cover Background">
+        <img id="cover-bg-img" src="images/cover.png" alt="Cover Background">
         <div id="cover-content">
             <div class="title-glitch">NEO-DESERT 2099</div>
             <div class="subtitle-glitch">사막의 세 가지 보물</div>
@@ -739,14 +742,19 @@
 
         if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
 
-        const imgElement = document.getElementById('visual-image');
-        const targetAsset = currentScene.asset || "통합_표지.png";
-        imgElement.style.opacity = 0;
-        setTimeout(() => {
-            imgElement.src = targetAsset;
-            imgElement.style.opacity = 1;
-        }, 200);
+const imgElement = document.getElementById('visual-image');
+    const targetAsset = currentScene.asset || "통합_표지.png";
 
+    if (targetAsset.toLowerCase().endsWith('.mp4')) {
+        imgElement.outerHTML = `<video id="visual-image" src="${targetAsset}" autoplay loop muted style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;"></video>`;
+    } else {
+        imgElement.outerHTML = `<img id="visual-image" src="${targetAsset}" alt="Visual Asset" style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;">`;
+    }
+
+    setTimeout(() => {
+        const nextElement = document.getElementById('visual-image');
+        if (nextElement) nextElement.style.opacity = 1;
+    }, 200);
         document.getElementById('asset-tag-overlay').innerText = `ASSET: ${targetAsset}`;
         document.getElementById('scene-tag-zone').innerHTML = currentScene.tag ? `<span class="scene-indicator">${currentScene.tag}</span>` : "";
         document.getElementById('location-tag-zone').innerText = currentScene.location || "NEO DESERT SYSTEM";
@@ -777,7 +785,7 @@
         S1: {
             tag: "NODE-01 : DESERT ENTRANCE",
             location: "RED DUST BORDERLAND",
-            asset: "에단.png",
+            asset: "videos/s1.MP4",
             narrative: "붉은 모래바람과 나노 가스가 가득한 어두운 사막. 에단의 신체 인디케이터가 요동친다. 시스템 냉각수가 한계치에 임박하며 회로 타는 비린내가 진동하기 시작한다.",
             dialogue: [
                 { speaker: '에단', text: '"크윽... 관문의 필터링 가스가 벌써 여기까지 침투한 건가? 픽셀이 자꾸 깨져..."' },
@@ -791,7 +799,7 @@
         S2: {
             tag: "NODE-02 : COMPATIBILITY CORE",
             location: "ABANDONED SERVER ROOM",
-            asset: "시온.png",
+            asset: "images/s2.png",
             narrative: "사막 속 버려진 오래된 전산 서버실. 청록색 홀로그램 메아리가 굉음을 내며 허공 위로 튀어나온다.",
             dialogue: [
                 { speaker: '메아리', text: '"미확인 데이터 감지. ...잠깐, 당신이 지닌 주파수 코드는 뭐죠?"' },
@@ -807,7 +815,7 @@
         S3: {
             tag: "NODE-03 : INDUSTRIAL BARGAIN",
             location: "UNDERGROUND WORKSHOP",
-            asset: "바렛.png",
+            asset: "images/s3.png",
             narrative: "기름때와 스파크가 사방으로 튀는 지하 정비소. 바렛이 연기가 치솟는 망가진 의수를 거칠게 내려놓는다.",
             dialogue: [
                 { speaker: '바렛', text: '"젠장, 방화벽 스캔에 당해서 팔의 파괴 마진 연산이 엉망이군."' },
@@ -823,7 +831,7 @@
         CHECK: {
             tag: "ROUTER : ROUTE SCANNING",
             location: "FIREWALL SEGMENT",
-            asset: "삼형제.png",
+            asset: "images/s4.png",
             narrative: "<b>[SYSTEM ROUTER SCANNING]</b><br>방화벽 라우터가 삼 형제의 누적 데이터 노이즈(N) 수치를 정밀 판별 측정 중입니다...",
             dialogue: [
                 { speaker: '시스템', text: '"경고. 네트워크 내 비정상 노이즈 레벨 연산 매칭 실행 중."' }
@@ -836,7 +844,7 @@
         RE_S3: {
             tag: "WARNING : DATA RETRY LOOP",
             location: "GLITCH CORE",
-            asset: "에단.png",
+            asset: "images/s1.png",
             narrative: "<b>[에러 발생 - 지지직]</b> 흑백의 레이어 위로 거친 정전기가 폭발하며 시야가 사정없이 흔들린다.",
             dialogue: [
                 { speaker: '에단', text: '"이 기시감은 뭐지? 로그에 누적된 수많은 삭제 마크들은..."' },
@@ -849,7 +857,7 @@
         S4: {
             tag: "NODE-04 : CHROME WALL BREAK",
             location: "GATEWAY SCREEN",
-            asset: "커맨더제로.png",
+            asset: "images/s5.png",
             narrative: "청색 광선 프레임이 눈앞을 가로막은 중앙 연산 방화벽 관문 전면 구역.",
             dialogue: [
                 { speaker: '커맨더 제로', text: '"규격을 이탈한 사막 파편 데이터들이군. 소거 프로토콜 가동."' },
@@ -865,7 +873,7 @@
         S5: {
             tag: "NODE-05 : TERMINATION THRESHOLD",
             location: "CORE SECURITY PERIMETER",
-            asset: "삼형제.png",
+            asset: "images/s4.png",
             narrative: "붉은색 보안 레이저 그리드가 압도적인 압박감으로 사방에서 덮쳐온다.",
             dialogue: [
                 { speaker: '시온', text: '"아... 형... 내 다리가 픽셀로 변해서 사라지고 있어... 너무 무서워..."' },
@@ -879,7 +887,7 @@
         JUDGE: {
             tag: "AUTHENTICATION : FINAL EVALUATION",
             location: "CORE GATE",
-            asset: "아리아공주.png",
+            asset: "images/data.png",
             narrative: "<b>[MASTER KEY AUTHENTICATION]</b><br>최종 서버 코어 진입을 위해 관리자 인증 키 획득 여부 및 누적 정서 지수(Humanity) 레벨값을 계측합니다.",
             dialogue: [
                 { speaker: '시스템 SYSTEM', text: '"인증 데이터 확인 프로토콜 대기 중."' }
@@ -893,7 +901,7 @@
         S6: {
             tag: "NODE-06 : THE ARIA CORE",
             location: "CENTRAL MATRIX ROOM",
-            asset: "아리아공주.png",
+            asset: "images/s6.png",
             narrative: "방대한 구체 연산실 중앙. 사막의 제어권을 쥔 AI 통제 코어 아리아 공주가 광채와 함께 부유한다.",
             dialogue: [
                 { speaker: '아리아 공주', text: '"관문을 뚫고 도달한 사막의 유저들이여. 너희의 가치는 입증되었다."' },
@@ -908,7 +916,7 @@
         END_A: {
             tag: "TRUE END : LIBERATION OF DATA",
             location: "WORLD LOG : RESOLVED",
-            asset: "군중_에셋.png",
+            asset: "images/end_a.png",
             narrative: "<b>[인도주의자 엔딩 - 사막의 해방]</b><br>중앙 통제 서버가 영구 해체되며 완벽한 데이터 자유가 전역에 해금된다.",
             dialogue: [
                 { speaker: '시온', text: '"형! 모래바람이 걷혀... 진짜 사람들의 얼굴과 이름이 보여!"' },
@@ -920,7 +928,7 @@
         END_B: {
             tag: "NORMAL END : ALGORITHM PROTOCOL",
             location: "WORLD LOG : REBOOTED",
-            asset: "삼형제_에셋.png",
+            asset: "images/end_b.png",
             narrative: "<b>[전략가 엔딩 - 격리된 평화]</b><br>고요한 금속실 벽면 위로 새로운 방화벽 격리 리셋 알고리즘이 차갑게 흐른다.",
             dialogue: [
                 { speaker: '바렛', text: '"붕괴는 막았지만, 통제 벽면들이 새로 쳐지고 있군요."' },
@@ -932,7 +940,7 @@
         G_OVER: {
             tag: "CRITICAL COMPONENT ERASURE",
             location: "SYSTEM NULL",
-            asset: "통합_표지.png",
+            asset: "images/g_over.png",
             narrative: "<b>[데이터 소멸 엔딩]</b><br>게이트를 무너뜨릴 핵심 관리자 마스터 키 데이터가 완벽히 부족합니다.",
             dialogue: [
                 { speaker: '에단', text: '"아... 안 돼! 주파수가 승인되지 않아...!"' },
