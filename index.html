@@ -256,7 +256,7 @@
             min-height: 120px;
         }
 
-        /* 🎨 [완벽 복구] 캐릭터 고유 네온 컬러 클래스 명세 */
+        /* 캐릭터 고유 네온 컬러 클래스 명세 */
         .ethan { color: #ff6b6b !important; font-weight: bold; }
         .barrett { color: #4dadf7 !important; font-weight: bold; }
         .zion { color: #33ffbb !important; font-weight: bold; }
@@ -534,6 +534,9 @@
     let typingTimeout = null;
     let timerInterval = null;
 
+    let vrewVoice = null; 
+    let bgmAudio = null; 
+
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function triggerSound(freq, type, duration) {
         try {
@@ -550,7 +553,6 @@
         } catch(e){}
     }
 
-    /* 🎨 [완벽 복구] 화자 감지 및 전용 클래스 매칭 시스템 */
     function getSpeakerClass(name) {
         if (name === '에단') return 'ethan';
         if (name === '바렛') return 'barrett';
@@ -563,6 +565,24 @@
         return '';
     }
 
+    // 🎵 배경음악 구동 엔진 (대소문자 자동 방어 및 유저 인터랙션 안전망 반영)
+    function playBackgroundMusic() {
+        if (!bgmAudio) {
+            bgmAudio = new Audio("audio/bgm.mp3"); 
+            bgmAudio.loop = true;
+            bgmAudio.volume = 0.3; 
+            
+            bgmAudio.play().then(() => {
+                console.log("BGM 재생 완료");
+            }).catch(e => {
+                console.log("자동재생 차단 우회 가동");
+                document.body.addEventListener('click', () => {
+                    if (bgmAudio) bgmAudio.play().catch(err => {});
+                }, { once: true });
+            });
+        }
+    }
+
     function initializeConsole() {
         const studentId = document.getElementById('student-id-input').value.trim();
         const studentName = document.getElementById('student-name-input').value.trim();
@@ -572,6 +592,10 @@
         }
         triggerSound(523.25, 'sine', 0.15);
         document.getElementById('cover-overlay').classList.add('fade-out');
+        
+        // 🎵 메인 인트로 통과 시 BGM 재생 시작
+        playBackgroundMusic();
+        
         transitScene("S1");
     }
 
@@ -582,10 +606,14 @@
             btn.innerText = 'PLAY';
             btn.classList.add('active-stop');
             if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
+            if (vrewVoice) vrewVoice.pause(); 
+            if (bgmAudio) bgmAudio.pause(); // 🎵 일시정지 시 BGM도 STOP
         } else {
             btn.innerText = 'STOP';
             btn.classList.remove('active-stop');
             startTypingLoop();
+            if (vrewVoice) vrewVoice.play().catch(e => {}); 
+            if (bgmAudio) bgmAudio.play().catch(e => {}); // 🎵 재개 시 BGM도 PLAY
         }
     }
 
@@ -611,7 +639,6 @@
                 clearInterval(timerInterval);
                 const currentScene = database[state.currentScene];
                 if (currentScene && currentScene.choices.length > 0) {
-                    // 제한 시간 초과 시 첫 번째 선택지 강제 자동 선택
                     const firstChoice = currentScene.choices[0];
                     executeChoice(firstChoice);
                 }
@@ -619,7 +646,6 @@
         }, 1000);
     }
 
-    /* ✨ [실시간 컬러 유실 완벽 해결] 고도화된 타겟 주입형 타이핑 엔진 */
     function startTypingLoop() {
         if (state.isPaused) return;
         const currentScene = database[state.currentScene];
@@ -638,7 +664,6 @@
             lineEl.setAttribute('data-line', typingLineIdx);
             lineEl.style.marginBottom = '12px';
             
-            // 핵심 버그 해결: 화자 이름 태그를 소스 레벨에서 전용 CSS 클래스로 묶어 선제 주입
             const speakerClass = getSpeakerClass(line.speaker);
             lineEl.innerHTML = `<span class="${speakerClass}">${line.speaker} : </span><span class="char-container" style="color: #FFF;"></span>`;
             target.appendChild(lineEl);
@@ -742,19 +767,28 @@
 
         if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
 
-const imgElement = document.getElementById('visual-image');
-    const targetAsset = currentScene.asset || "통합_표지.png";
+        if (vrewVoice) {
+            vrewVoice.pause();
+            vrewVoice = null;
+        }
 
-    if (targetAsset.toLowerCase().endsWith('.mp4')) {
-        imgElement.outerHTML = `<video id="visual-image" src="${targetAsset}" autoplay loop muted style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;"></video>`;
-    } else {
-        imgElement.outerHTML = `<img id="visual-image" src="${targetAsset}" alt="Visual Asset" style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;">`;
-    }
+        // 🎵 대사 리프레시 시 BGM 기본 볼륨(0.3) 가복구
+        if (bgmAudio) bgmAudio.volume = 0.3;
 
-    setTimeout(() => {
-        const nextElement = document.getElementById('visual-image');
-        if (nextElement) nextElement.style.opacity = 1;
-    }, 200);
+        const imgElement = document.getElementById('visual-image');
+        const targetAsset = currentScene.asset || "통합_표지.png";
+
+        if (targetAsset.toLowerCase().endsWith('.mp4')) {
+            imgElement.outerHTML = `<video id="visual-image" src="${targetAsset}" autoplay loop muted style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;"></video>`;
+        } else {
+            imgElement.outerHTML = `<img id="visual-image" src="${targetAsset}" alt="Visual Asset" style="width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.2s;">`;
+        }
+
+        setTimeout(() => {
+            const nextElement = document.getElementById('visual-image');
+            if (nextElement) nextElement.style.opacity = 1;
+        }, 200);
+        
         document.getElementById('asset-tag-overlay').innerText = `ASSET: ${targetAsset}`;
         document.getElementById('scene-tag-zone').innerHTML = currentScene.tag ? `<span class="scene-indicator">${currentScene.tag}</span>` : "";
         document.getElementById('location-tag-zone').innerText = currentScene.location || "NEO DESERT SYSTEM";
@@ -776,16 +810,32 @@ const imgElement = document.getElementById('visual-image');
         btn.innerText = 'STOP';
         btn.classList.remove('active-stop');
 
+        // 🎵 [교수님 필수 사양] 오디오 재생 시 BGM 오디오 연동 덕킹 처리 (대사 시작 시 0.05배 축소)
+        if (currentScene.audio) {
+            vrewVoice = new Audio(currentScene.audio);
+            
+            vrewVoice.onplay = () => {
+                if (bgmAudio) bgmAudio.volume = 0.05; 
+            };
+            vrewVoice.onended = () => {
+                if (bgmAudio) bgmAudio.volume = 0.3;
+            };
+
+            vrewVoice.play().catch(error => {
+                console.log("대사 파일 재생 대기");
+            });
+        }
+
         runTimer();
         startTypingLoop();
     }
 
-    // 💬 [100% 사막 복구 완료] 시나리오 정밀 맵 데이터베이스
     const database = {
         S1: {
             tag: "NODE-01 : DESERT ENTRANCE",
             location: "RED DUST BORDERLAND",
             asset: "videos/s1.MP4",
+            audio: "audio/s1.MP3",
             narrative: "붉은 모래바람과 나노 가스가 가득한 어두운 사막. 에단의 신체 인디케이터가 요동친다. 시스템 냉각수가 한계치에 임박하며 회로 타는 비린내가 진동하기 시작한다.",
             dialogue: [
                 { speaker: '에단', text: '"크윽... 관문의 필터링 가스가 벌써 여기까지 침투한 건가? 픽셀이 자꾸 깨져..."' },
@@ -799,7 +849,8 @@ const imgElement = document.getElementById('visual-image');
         S2: {
             tag: "NODE-02 : COMPATIBILITY CORE",
             location: "ABANDONED SERVER ROOM",
-            asset: "images/s2.png",
+            asset: "videos/s2.MP4",
+	audio: "audio/s2.mp3",
             narrative: "사막 속 버려진 오래된 전산 서버실. 청록색 홀로그램 메아리가 굉음을 내며 허공 위로 튀어나온다.",
             dialogue: [
                 { speaker: '메아리', text: '"미확인 데이터 감지. ...잠깐, 당신이 지닌 주파수 코드는 뭐죠?"' },
